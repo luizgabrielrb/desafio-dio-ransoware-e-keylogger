@@ -129,19 +129,6 @@ Optei por **documentar em profundidade** este tópico em vez de implementar o ke
 
 ---
 
-## 📁 Estrutura do Repositório
-
-```
-.
-├── README.md
-├── scripts/
-│   └── demo_criptografia_fernet.py
-├── test_files/
-│   ├── arquivo_teste_1.txt
-│   └── arquivo_teste_2.txt
-└── images/
-    └── (capturas de tela da execução, opcional)
-```
 
 ---
 
