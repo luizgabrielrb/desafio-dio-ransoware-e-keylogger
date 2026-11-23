@@ -1,0 +1,135 @@
+"""
+demo_criptografia_fernet.py
+
+OBJETIVO EDUCACIONAL
+---------------------
+Este script NÃO é um ransomware. Ele existe para demonstrar, de forma segura
+e controlada, o conceito técnico central que torna o ransomware perigoso:
+a criptografia simétrica de arquivos.
+
+O que este script FAZ:
+  - Opera apenas dentro da pasta "test_files/" deste repositório.
+  - Gera uma chave Fernet (AES simétrico) e a salva em "chave.key".
+  - Criptografa os arquivos de teste.
+  - Permite descriptografá-los de volta usando a mesma chave.
+  - Imprime uma mensagem explicativa (não uma nota de resgate real).
+
+O que este script NÃO FAZ (diferente de um ransomware real):
+  - Não varre o sistema de arquivos todo (não ataca Documentos, Desktop, etc).
+  - Não se espalha, não se copia, não cria persistência.
+  - Não esconde ou exfiltra a chave — ela fica salva localmente, visível,
+    exatamente para que você possa reverter o processo e entender o fluxo.
+  - Não exige pagamento nem possui nenhuma lógica de extorsão real.
+
+Por que isso importa para o aprendizado:
+  Um ransomware real usa esse MESMO princípio criptográfico (gerar uma chave,
+  cifrar os arquivos da vítima), mas com duas diferenças cruciais:
+  1) ele age sobre arquivos reais e importantes da vítima, sem permissão;
+  2) a chave de descriptografia é enviada/retida pelo atacante, não pela vítima.
+  É exatamente a ausência de controle sobre a chave que transforma uma técnica
+  criptográfica legítima em uma arma de extorsão.
+
+Dependência:
+  pip install cryptography
+"""
+
+import os
+from cryptography.fernet import Fernet
+
+PASTA_TESTE = os.path.join(os.path.dirname(__file__), "..", "test_files")
+ARQUIVO_CHAVE = os.path.join(os.path.dirname(__file__), "chave.key")
+
+
+def gerar_chave():
+    """Gera e salva uma chave Fernet localmente (visível, não oculta)."""
+    chave = Fernet.generate_key()
+    with open(ARQUIVO_CHAVE, "wb") as f:
+        f.write(chave)
+    print(f"[+] Chave gerada e salva em: {ARQUIVO_CHAVE}")
+    return chave
+
+
+def carregar_chave():
+    with open(ARQUIVO_CHAVE, "rb") as f:
+        return f.read()
+
+
+def listar_arquivos_teste():
+    if not os.path.isdir(PASTA_TESTE):
+        os.makedirs(PASTA_TESTE)
+    return [
+        os.path.join(PASTA_TESTE, nome)
+        for nome in os.listdir(PASTA_TESTE)
+        if os.path.isfile(os.path.join(PASTA_TESTE, nome))
+    ]
+
+
+def criptografar_arquivos(chave):
+    fernet = Fernet(chave)
+    arquivos = listar_arquivos_teste()
+    if not arquivos:
+        print("[!] Nenhum arquivo encontrado em test_files/. Crie alguns arquivos .txt de teste antes.")
+        return
+
+    for caminho in arquivos:
+        with open(caminho, "rb") as f:
+            dados = f.read()
+        dados_criptografados = fernet.encrypt(dados)
+        with open(caminho, "wb") as f:
+            f.write(dados_criptografados)
+        print(f"[+] Criptografado: {os.path.basename(caminho)}")
+
+    print("\n--- MENSAGEM EDUCACIONAL (NÃO É UM RESGATE REAL) ---")
+    print("Seus arquivos de teste foram criptografados como demonstração.")
+    print(f"A chave usada está salva em '{ARQUIVO_CHAVE}' — use-a para reverter.")
+    print("Em um ataque real, essa chave ficaria apenas com o atacante.")
+    print("------------------------------------------------------\n")
+
+
+def descriptografar_arquivos(chave):
+    fernet = Fernet(chave)
+    arquivos = listar_arquivos_teste()
+    for caminho in arquivos:
+        with open(caminho, "rb") as f:
+            dados = f.read()
+        try:
+            dados_originais = fernet.decrypt(dados)
+        except Exception:
+            print(f"[!] Falha ao descriptografar {os.path.basename(caminho)} (talvez já esteja descriptografado).")
+            continue
+        with open(caminho, "wb") as f:
+            f.write(dados_originais)
+        print(f"[+] Restaurado: {os.path.basename(caminho)}")
+
+
+def menu():
+    print("=== Demonstração Educacional de Criptografia (Conceito de Ransomware) ===")
+    print("1 - Gerar nova chave")
+    print("2 - Criptografar arquivos de teste")
+    print("3 - Descriptografar arquivos de teste")
+    print("0 - Sair")
+    opcao = input("Escolha uma opção: ").strip()
+
+    if opcao == "1":
+        gerar_chave()
+    elif opcao == "2":
+        if not os.path.exists(ARQUIVO_CHAVE):
+            print("[!] Nenhuma chave encontrada, gerando uma nova...")
+            chave = gerar_chave()
+        else:
+            chave = carregar_chave()
+        criptografar_arquivos(chave)
+    elif opcao == "3":
+        if not os.path.exists(ARQUIVO_CHAVE):
+            print("[!] Chave não encontrada. Impossível descriptografar.")
+        else:
+            chave = carregar_chave()
+            descriptografar_arquivos(chave)
+    elif opcao == "0":
+        return
+    else:
+        print("Opção inválida.")
+
+
+if __name__ == "__main__":
+    menu()
